@@ -37,6 +37,9 @@ contract FlightSuretyApp {
     }
     mapping(bytes32 => Flight) private flights;
 
+    uint256 CONSENSU_LIMIT = 4;
+    uint256 consensus_counter = 0;
+
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
     /********************************************************************************************/
@@ -87,6 +90,10 @@ contract FlightSuretyApp {
         return flightSuretyData.isOperational(); // Modify to call data contract's status
     }
 
+    function firstAirline() public returns (address) {
+        return flightSuretyData.getFirstAirline();
+    }
+
     /**
      * @dev Sets contract operations on/off
      *
@@ -104,12 +111,20 @@ contract FlightSuretyApp {
      * @dev Add an airline to the registration queue
      *
      */
-    function registerAirline()
+    function registerAirline(address newAirlineAddress)
         external
         requireIsOperational
         returns (bool success, uint256 votes)
     {
-        return (success, 0);
+        if (consensus_counter < CONSENSU_LIMIT) {
+            require(msg.sender == firstAirline(), "Not the first airline");
+            consensus_counter.add(1);
+            flightSuretyData.registerAirline(newAirlineAddress);
+            success = true;
+            votes = 0;
+        } else {
+            // do something else
+        }
     }
 
     /**

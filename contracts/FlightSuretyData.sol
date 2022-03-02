@@ -9,6 +9,7 @@ contract FlightSuretyData {
     /*                                       DATA VARIABLES                                     */
     /********************************************************************************************/
 
+    address public firstAirline;
     address private contractOwner; // Account used to deploy contract
     bool public operational = true; // Blocks all state changes throughout the contract if false
 
@@ -24,12 +25,14 @@ contract FlightSuretyData {
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
+    event AirlineReg(bool, bool, uint256);
 
     /**
      * @dev Constructor
      *      The deploying account becomes contractOwner
      */
     constructor(address airline) public {
+        firstAirline = airline;
         airlines[airline] = Airline(true, false, 0);
         contractOwner = msg.sender;
     }
@@ -50,7 +53,6 @@ contract FlightSuretyData {
         require(operational, "Contract is currently not operational");
         _; // All modifiers require an "_" which indicates where the function body will be added
     }
-
     /**
      * @dev Modifier that requires the "ContractOwner" account to be the function caller
      */
@@ -101,12 +103,26 @@ contract FlightSuretyData {
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
 
+    function getFirstAirline() external returns (address) {
+        return firstAirline;
+    }
+
     /**
      * @dev Add an airline to the registration queue
      *      Can only be called from FlightSuretyApp contract
      *
      */
-    function registerAirline() external requireIsOperational {}
+    function registerAirline(address newAirlineAddress) requireIsOperational {
+        airlines[newAirlineAddress] = Airline(true, true, 0);
+        emit AirlineReg(airlines[newAirlineAddress].isRegistered, true, 0);
+    }
+
+    function isAirlineRegistered(address newAirlineAddress)
+        external
+        returns (bool)
+    {
+        return airlines[newAirlineAddress].isRegistered;
+    }
 
     /**
      * @dev Buy insurance for a flight
