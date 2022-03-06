@@ -37,8 +37,7 @@ contract FlightSuretyApp {
     }
     mapping(bytes32 => Flight) private flights;
 
-    uint256 CONSENSU_LIMIT = 4;
-    uint256 consensus_counter = 0;
+    event AirlineAdded(address addr, bool regged);
 
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -59,6 +58,21 @@ contract FlightSuretyApp {
             "Contract is currently not operational"
         );
         _; // All modifiers require an "_" which indicates where the function body will be added
+    }
+
+    modifier requireAirlineisUnRegistered(address airline) {
+        require(
+            !flightSuretyData.isAirlineRegistered(airline),
+            "Flight is already registered"
+        );
+        _;
+    }
+    modifier requireIsAirlineFunded(address airline) {
+        require(
+            flightSuretyData.isAirlineFunded(airline),
+            "Airline is not funded."
+        );
+        _;
     }
 
     /**
@@ -114,17 +128,35 @@ contract FlightSuretyApp {
     function registerAirline(address newAirlineAddress)
         external
         requireIsOperational
-        returns (bool success, uint256 votes)
     {
-        if (consensus_counter < CONSENSU_LIMIT) {
-            require(msg.sender == firstAirline(), "Not the first airline");
-            consensus_counter.add(1);
-            flightSuretyData.registerAirline(newAirlineAddress);
-            success = true;
-            votes = 0;
+        flightSuretyData.registerAirline(newAirlineAddress);
+        if (isAirlineRegistered(newAirlineAddress)) {
+            emit AirlineAdded(newAirlineAddress, true);
         } else {
-            // do something else
+            emit AirlineAdded(newAirlineAddress, false);
         }
+
+        //     if (
+        //         flightSuretyData.getConsensusCounter() <=
+        //         flightSuretyData.getConsensusThreshold()
+        //     ) {
+        //         require(msg.sender == firstAirline(), "Not the first airline");
+        //         flightSuretyData.registerAirline(newAirlineAddress, msg.sender);
+        //         success = true;
+
+        //         return (success);
+        //     } else {
+        //         return (false);
+        //         //do something else
+        //     }
+    }
+
+    function isAirlineRegistered(address airlineAddress)
+        public
+        view
+        returns (bool)
+    {
+        return flightSuretyData.isAirlineRegistered(airlineAddress);
     }
 
     /**

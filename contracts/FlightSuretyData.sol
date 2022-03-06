@@ -19,13 +19,17 @@ contract FlightSuretyData {
         uint256 funds;
     }
 
+    uint256 CONSENSUS_LIMIT = 4;
+    uint256 consensus_counter = 0;
+
     mapping(address => Airline) airlines;
     mapping(address => uint256) private authorizedCallers;
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
-    event AirlineReg(bool, bool, uint256);
+
+    event Lookup(address addr, bool regged);
 
     /**
      * @dev Constructor
@@ -33,7 +37,11 @@ contract FlightSuretyData {
      */
     constructor(address airline) public {
         firstAirline = airline;
-        airlines[airline] = Airline(true, false, 0);
+        airlines[airline] = Airline({
+            isRegistered: true,
+            isFunded: false,
+            funds: 0
+        });
         contractOwner = msg.sender;
     }
 
@@ -107,21 +115,43 @@ contract FlightSuretyData {
         return firstAirline;
     }
 
+    function getConsensusCounter() external returns (uint256) {
+        return consensus_counter;
+    }
+
+    function getConsensusThreshold() external returns (uint256) {
+        return CONSENSUS_LIMIT;
+    }
+
     /**
      * @dev Add an airline to the registration queue
      *      Can only be called from FlightSuretyApp contract
      *
      */
-    function registerAirline(address newAirlineAddress) requireIsOperational {
-        airlines[newAirlineAddress] = Airline(true, true, 0);
-        emit AirlineReg(airlines[newAirlineAddress].isRegistered, true, 0);
+    function registerAirline(address newAirlineAddress)
+        external
+        requireIsOperational
+    {
+        airlines[newAirlineAddress] = Airline({
+            isRegistered: true,
+            isFunded: false,
+            funds: 0
+        });
+
+        consensus_counter = consensus_counter.add(1);
     }
 
-    function isAirlineRegistered(address newAirlineAddress)
-        external
-        returns (bool)
-    {
-        return airlines[newAirlineAddress].isRegistered;
+    function isAirlineRegistered(address airline) public view returns (bool) {
+        Airline al = airlines[airline];
+        if (!al.isFunded) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    function isAirlineFunded(address airline) public view returns (bool) {
+        return airlines[airline].isFunded;
     }
 
     /**
