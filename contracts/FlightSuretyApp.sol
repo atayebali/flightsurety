@@ -5,7 +5,6 @@ pragma solidity ^0.4.25;
 // More info: https://www.nccgroup.trust/us/about-us/newsroom-and-events/blog/2018/november/smart-contract-insecurity-bad-arithmetic/
 
 import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./FlightSuretyData.sol";
 
 /************************************************** */
 /* FlightSurety Smart Contract                      */
@@ -67,13 +66,13 @@ contract FlightSuretyApp {
         );
         _;
     }
-    modifier requireIsAirlineFunded(address airline) {
-        require(
-            flightSuretyData.isAirlineFunded(airline),
-            "Airline is not funded."
-        );
-        _;
-    }
+    // modifier requireIsAirlineFunded(address airline) {
+    //     require(
+    //         flightSuretyData.isAirlineFunded(airline),
+    //         "Airline is not funded."
+    //     );
+    //     _;
+    // }
 
     /**
      * @dev Modifier that requires the "ContractOwner" account to be the function caller
@@ -360,4 +359,26 @@ contract FlightSuretyApp {
     }
 
     // endregion
+}
+
+contract FlightSuretyData {
+    function isOperational() public view returns (bool);
+
+    function isActive(address airline) public view returns (bool);
+
+    function registerAirline(address airlineAddress) external;
+
+    function isAirlineRegistered(address airlineAddress)
+        public
+        view
+        returns (bool);
+
+    function getFirstAirline() external returns (address);
+
+    function setOperatingStatus(bool mode) external;
+
+    function getAirlineVotes(address airline)
+        public
+        view
+        returns (uint256 votes);
 }

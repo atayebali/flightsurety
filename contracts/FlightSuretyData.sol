@@ -142,12 +142,7 @@ contract FlightSuretyData {
     }
 
     function isAirlineRegistered(address airline) public view returns (bool) {
-        Airline al = airlines[airline];
-        if (!al.isFunded) {
-            return true;
-        } else {
-            return false;
-        }
+        return airlines[airline].isRegistered;
     }
 
     function isAirlineFunded(address airline) public view returns (bool) {
