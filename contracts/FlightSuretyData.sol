@@ -9,7 +9,7 @@ contract FlightSuretyData {
     /*                                       DATA VARIABLES                                     */
     /********************************************************************************************/
 
-    address public firstAirline;
+    address public firstAirline; //holds the first airline
     address private contractOwner; // Account used to deploy contract
     bool public operational = true; // Blocks all state changes throughout the contract if false
 
@@ -19,11 +19,15 @@ contract FlightSuretyData {
         uint256 funds;
     }
 
-    uint256 CONSENSUS_LIMIT = 4;
-    uint256 consensus_counter = 0;
+    uint256 CONSENSUS_LIMIT = 4; //first 4 registered without voting
+    uint256 consensus_counter = 0; // tracks registered airlines
+
+    uint256 public constant MIN_FUNDS = 10 ether; //need for funding
 
     mapping(address => Airline) airlines;
     mapping(address => uint256) private authorizedCallers;
+
+    mapping(address => address[]) private votingRecord; //tracks airline votes by new airline
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
@@ -42,6 +46,8 @@ contract FlightSuretyData {
             isFunded: false,
             funds: 0
         });
+        votingRecord[airline].push(msg.sender); //updating for consistency
+
         contractOwner = msg.sender;
     }
 
@@ -123,6 +129,10 @@ contract FlightSuretyData {
         return CONSENSUS_LIMIT;
     }
 
+    function hasFunds(address airline) public view returns (bool) {
+        return (airlines[airline].funds >= MIN_FUNDS);
+    }
+
     /**
      * @dev Add an airline to the registration queue
      *      Can only be called from FlightSuretyApp contract
@@ -131,14 +141,35 @@ contract FlightSuretyData {
     function registerAirline(address newAirlineAddress)
         external
         requireIsOperational
+        requireAuthorizedCaller
     {
         airlines[newAirlineAddress] = Airline({
             isRegistered: true,
             isFunded: false,
             funds: 0
         });
-
         consensus_counter = consensus_counter.add(1);
+    }
+
+    function multiPartyConsenus(address airline, address voter) returns (bool) {
+        bool isDuplicate = false;
+
+        //checking of duplicate votes and throw exception
+        for (uint256 c = 0; c < votingRecord[airline].length; c++) {
+            if (votingRecord[airline][c] == voter) {
+                isDuplicate = true;
+                break;
+            }
+        }
+        require(!isDuplicate, "Airline has already voted");
+
+        //add vote to the record and signal if ready for registration or not
+        votingRecord[airline].push(msg.sender);
+        if (votingRecord[airline].length >= consensus_counter.div(2)) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     function isAirlineRegistered(address airline) public view returns (bool) {
@@ -171,7 +202,15 @@ contract FlightSuretyData {
      *      resulting in insurance payouts, the contract should be self-sustaining
      *
      */
-    function fund() public payable requireIsOperational {}
+    function fund() public payable requireIsOperational {
+        require(msg.value > 0, "Trying to send a bad value");
+        //save the current balance
+        uint256 current_balance = airlines[msg.sender].funds;
+        //safe add the new value
+        uint256 new_balance = current_balance.add(msg.value);
+        //update balance given the add works
+        airlines[msg.sender].funds = new_balance;
+    }
 
     function getFlightKey(
         address airline,

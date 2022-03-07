@@ -7,6 +7,7 @@ contract('Flight Surety Tests', async (accounts) => {
     before('setup contract', async () => {
         config = await Test.Config(accounts);
         await config.flightSuretyData.authorizeCaller(config.flightSuretyApp.address);
+
     });
     describe("Operations", async () => {
 
@@ -69,38 +70,48 @@ contract('Flight Surety Tests', async (accounts) => {
         });
     })
 
+
+    it('cannot register an Airline using registerAirline() if it is not funded', async () => {
+
+        // ARRANGE
+        let newAirline = accounts[8];
+
+        // ACT
+        try {
+            await config.flightSuretyApp.registerAirline(newAirline, { from: config.firstAirline });
+        }
+        catch (e) {
+
+        }
+        let result = await config.flightSuretyApp.isAirlineRegistered.call(newAirline);
+
+        // ASSERT
+        assert.equal(result, false, "Airline should not be able to register another airline if it hasn't provided funding");
+
+    });
+
     describe("Airline", async () => {
+        before('setup funds', asyn)
 
         it("only registered airline can register another up to 4 count", async () => {
-            let newAirline = accounts[2];
-            await config.flightSuretyApp.registerAirline(newAirline, { from: config.firstAirline });
+            let funds = await config.flightSuretyData.MIN_FUNDS.call();
 
-            let result = await config.flightSuretyApp.isAirlineRegistered.call(newAirline);
-
-            // ASSERT
-            assert.equal(result, true, "The airline did not register correctly");
-
-
-        })
-
-        xit('cannot register an Airline using registerAirline() if it is not funded', async () => {
-
-            // ARRANGE
-            let newAirline = accounts[3];
-
-            // ACT
-            try {
+            await config.flightSuretyData.fund({ from: config.firstAirline, value: funds });
+            for (i = 2; i <= 6; i++) {
+                let newAirline = accounts[i];
                 await config.flightSuretyApp.registerAirline(newAirline, { from: config.firstAirline });
+                let result = await config.flightSuretyApp.isAirlineRegistered.call(newAirline);
+                //ASSERT
+                assert.equal(result, true, "The airline did not register correctly");
             }
-            catch (e) {
-
-            }
+        })
+        xit("Adding more than 4 airlines fails", async () => {
+            let newAirline = accounts[7];
+            await config.flightSuretyApp.registerAirline(newAirline, { from: config.firstAirline });
             let result = await config.flightSuretyApp.isAirlineRegistered.call(newAirline);
-
             // ASSERT
-            assert.equal(result, false, "Airline should not be able to register another airline if it hasn't provided funding");
-
-        });
+            assert.equal(result, false, "Airline got added and it should not have.");
+        })
 
     })
 

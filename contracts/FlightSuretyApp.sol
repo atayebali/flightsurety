@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity >=0.4.25;
 
 // It's important to avoid vulnerabilities due to numeric overflow bugs
 // OpenZeppelin's SafeMath library, when used correctly, protects agains such bugs
@@ -35,8 +35,9 @@ contract FlightSuretyApp {
         address airline;
     }
     mapping(bytes32 => Flight) private flights;
+    mapping(address => uint256) private votes;
 
-    event AirlineAdded(address addr, bool regged);
+    event AirlineAdded(address addr, bool isRegistered);
 
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -51,7 +52,7 @@ contract FlightSuretyApp {
      *      the event there is an issue that needs to be fixed
      */
     modifier requireIsOperational() {
-        // XXXModify to call data contract's status
+        //Modify to call data contract's status
         require(
             flightSuretyData.isOperational(),
             "Contract is currently not operational"
@@ -66,13 +67,13 @@ contract FlightSuretyApp {
         );
         _;
     }
-    // modifier requireIsAirlineFunded(address airline) {
-    //     require(
-    //         flightSuretyData.isAirlineFunded(airline),
-    //         "Airline is not funded."
-    //     );
-    //     _;
-    // }
+    modifier requireIsAirlineFunded() {
+        require(
+            flightSuretyData.hasFunds(msg.sender),
+            "Airline is not funded."
+        );
+        _;
+    }
 
     /**
      * @dev Modifier that requires the "ContractOwner" account to be the function caller
@@ -127,27 +128,26 @@ contract FlightSuretyApp {
     function registerAirline(address newAirlineAddress)
         external
         requireIsOperational
+        requireAirlineisUnRegistered(newAirlineAddress)
+        requireIsAirlineFunded
     {
-        flightSuretyData.registerAirline(newAirlineAddress);
-        if (isAirlineRegistered(newAirlineAddress)) {
-            emit AirlineAdded(newAirlineAddress, true);
+        if (
+            flightSuretyData.getConsensusCounter() <=
+            flightSuretyData.getConsensusThreshold()
+        ) {
+            require(msg.sender == firstAirline(), "Not the first airline");
+            flightSuretyData.registerAirline(newAirlineAddress);
         } else {
-            emit AirlineAdded(newAirlineAddress, false);
+            require(isAirlineRegistered(msg.sender)); //ensure caller is registered
+            bool readyToRegister = flightSuretyData.multiPartyConsenus( //voting
+                newAirlineAddress,
+                msg.sender
+            );
+            //if number of votes are reached then register
+            if (readyToRegister) {
+                flightSuretyData.registerAirline(newAirlineAddress);
+            }
         }
-
-        //     if (
-        //         flightSuretyData.getConsensusCounter() <=
-        //         flightSuretyData.getConsensusThreshold()
-        //     ) {
-        //         require(msg.sender == firstAirline(), "Not the first airline");
-        //         flightSuretyData.registerAirline(newAirlineAddress, msg.sender);
-        //         success = true;
-
-        //         return (success);
-        //     } else {
-        //         return (false);
-        //         //do something else
-        //     }
     }
 
     function isAirlineRegistered(address airlineAddress)
@@ -364,7 +364,9 @@ contract FlightSuretyApp {
 contract FlightSuretyData {
     function isOperational() public view returns (bool);
 
-    function isActive(address airline) public view returns (bool);
+    function getConsensusCounter() external returns (uint256);
+
+    function getConsensusThreshold() external returns (uint256);
 
     function registerAirline(address airlineAddress) external;
 
@@ -373,9 +375,13 @@ contract FlightSuretyData {
         view
         returns (bool);
 
+    function hasFunds(address airline) public view returns (bool);
+
     function getFirstAirline() external returns (address);
 
     function setOperatingStatus(bool mode) external;
+
+    function multiPartyConsenus(address airline, address voter) returns (bool);
 
     function getAirlineVotes(address airline)
         public
