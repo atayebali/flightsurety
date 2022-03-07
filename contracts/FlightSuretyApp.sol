@@ -138,6 +138,7 @@ contract FlightSuretyApp {
             require(msg.sender == firstAirline(), "Not the first airline");
             flightSuretyData.registerAirline(newAirlineAddress);
         } else {
+            //TODO make this a modifier
             require(isAirlineRegistered(msg.sender)); //ensure caller is registered
             bool readyToRegister = flightSuretyData.multiPartyConsenus( //voting
                 newAirlineAddress,
@@ -382,9 +383,4 @@ contract FlightSuretyData {
     function setOperatingStatus(bool mode) external;
 
     function multiPartyConsenus(address airline, address voter) returns (bool);
-
-    function getAirlineVotes(address airline)
-        public
-        view
-        returns (uint256 votes);
 }
