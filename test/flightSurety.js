@@ -114,8 +114,24 @@ contract('Flight Surety Tests', async (accounts) => {
             })
         })
     })
+    describe('Flights', async () => {
+        it('Registers a flight for an airline', async () => {
+            let number = '1'
+            let updatedTimeStamp = Date.now()
+            let key = "BLANK"
 
+            // ACT
+            try {
+                key = await config.flightSuretyApp.registerFlight.call(updatedTimeStamp, number, { from: config.firstAirline });
+            }
+            catch (e) {
+                console.log("Error happened" + e);
+            }
+            assert.notEqual(key, "BLANK", "key not set correctly")
+        })
+    })
 
+    describe('Passenger', async () => {
 
-
+    })
 });

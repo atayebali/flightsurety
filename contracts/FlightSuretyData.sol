@@ -29,11 +29,33 @@ contract FlightSuretyData {
 
     mapping(address => address[]) private votingRecord; //tracks airline votes by new airline
 
+    struct Flight {
+        bool isRegistered;
+        uint8 statusCode;
+        uint256 updatedTimestamp;
+        address airline;
+    }
+
+    mapping(bytes32 => Flight) private flights;
+
+    //Insurance per passenger
+    struct Insurance {
+        address passenger;
+        uint256 amount;
+        uint256 credit;
+        uint256 payout;
+    }
+
+    // Flight Insurance. Collection of passengers with insurance by Flight
+    mapping(bytes32 => Insurance) public flightInsurance;
+
+    uint256 public constant INSURANCE_PRICE = 1 ether; // min purchase for flight insurance
+
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
-
-    event Lookup(address addr, bool regged);
+    event FlightRegistered(bytes32 key);
+    event InsurancePurchase(bytes32 key, address passenger);
 
     /**
      * @dev Constructor
@@ -75,11 +97,26 @@ contract FlightSuretyData {
         _;
     }
 
+    modifier requireAirlineRegistered(address addr) {
+        require(airlines[addr].isRegistered, "Airline is not registered");
+        _;
+    }
+
     modifier requireAuthorizedCaller() {
         require(
             authorizedCallers[msg.sender] == 1,
             "Not from an authorized caller"
         );
+        _;
+    }
+
+    modifier requireAirlineFunded(address airline) {
+        require(hasFunds(airline), "Airline is not funded");
+        _;
+    }
+
+    modifier requireFlightUnRegistered(bytes32 key) {
+        require(!flights[key].isRegistered, "Flight is already registered");
         _;
     }
 
@@ -180,11 +217,53 @@ contract FlightSuretyData {
         return airlines[airline].isFunded;
     }
 
+    function registerFlight(
+        bytes32 key,
+        address airline,
+        uint256 updatedTimestamp,
+        string number
+    )
+        external
+        requireIsOperational
+        requireAirlineFunded(airline)
+        requireFlightUnRegistered(key)
+        returns (bool)
+    {
+        flights[key] = Flight({
+            isRegistered: true,
+            statusCode: 0,
+            updatedTimestamp: updatedTimestamp,
+            airline: airline
+        });
+        emit FlightRegistered(key);
+        return flights[key].isRegistered;
+    }
+
+    function isFlightRegistered(bytes32 key)
+        external
+        requireIsOperational
+        returns (bool)
+    {
+        return flights[key].isRegistered;
+    }
+
     /**
      * @dev Buy insurance for a flight
      *
      */
-    function buy() external payable requireIsOperational {}
+    function buy(
+        bytes32 key,
+        address passenger,
+        uint256 amount
+    ) external payable requireIsOperational {
+        flightInsurance[key] = Insurance({
+            passenger: passenger,
+            amount: amount,
+            payout: INSURANCE_PRICE,
+            credit: 0
+        });
+        emit InsurancePurchase(key, passenger);
+    }
 
     /**
      *  @dev Credits payouts to insurees
@@ -202,7 +281,12 @@ contract FlightSuretyData {
      *      resulting in insurance payouts, the contract should be self-sustaining
      *
      */
-    function fund() public payable requireIsOperational {
+    function fund()
+        public
+        payable
+        requireIsOperational
+        requireAirlineRegistered(msg.sender)
+    {
         require(msg.value > 0, "Trying to send a bad value");
         //save the current balance
         uint256 current_balance = airlines[msg.sender].funds;
@@ -210,6 +294,7 @@ contract FlightSuretyData {
         uint256 new_balance = current_balance.add(msg.value);
         //update balance given the add works
         airlines[msg.sender].funds = new_balance;
+        airlines[msg.sender].isFunded = true;
     }
 
     function getFlightKey(

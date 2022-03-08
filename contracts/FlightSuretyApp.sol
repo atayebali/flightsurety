@@ -28,13 +28,6 @@ contract FlightSuretyApp {
 
     FlightSuretyData flightSuretyData; //referce set for the data
 
-    struct Flight {
-        bool isRegistered;
-        uint8 statusCode;
-        uint256 updatedTimestamp;
-        address airline;
-    }
-    mapping(bytes32 => Flight) private flights;
     mapping(address => uint256) private votes;
 
     event AirlineAdded(address addr, bool isRegistered);
@@ -159,11 +152,35 @@ contract FlightSuretyApp {
         return flightSuretyData.isAirlineRegistered(airlineAddress);
     }
 
+    function isFlightRegistered(bytes32 key) public view returns (bool) {
+        return flightSuretyData.isFlightRegistered(key);
+    }
+
     /**
      * @dev Register a future flight for insuring.
      *
      */
-    function registerFlight() external requireIsOperational {}
+    function registerFlight(uint256 updatedTimeStamp, string number)
+        external
+        requireIsOperational
+        requireIsAirlineFunded
+        returns (bytes32)
+    {
+        bytes32 key = getFlightKey(msg.sender, number, updatedTimeStamp);
+        bool result = flightSuretyData.registerFlight(
+            key,
+            msg.sender,
+            updatedTimeStamp,
+            number
+        );
+        require(result, "Failed to register flight");
+        return key;
+    }
+
+    function buy(bytes32 flightKey) public payable requireIsOperational {
+        address(flightSuretyData).transfer(msg.value);
+        flightSuretyData.buy(flightKey, msg.sender, msg.value);
+    }
 
     /**
      * @dev Called after oracle has updated flight status
@@ -365,6 +382,13 @@ contract FlightSuretyApp {
 contract FlightSuretyData {
     function isOperational() public view returns (bool);
 
+    function registerFlight(
+        bytes32 key,
+        address airline,
+        uint256 updatedTimestamp,
+        string number
+    ) external returns (bool);
+
     function getConsensusCounter() external returns (uint256);
 
     function getConsensusThreshold() external returns (uint256);
@@ -383,4 +407,12 @@ contract FlightSuretyData {
     function setOperatingStatus(bool mode) external;
 
     function multiPartyConsenus(address airline, address voter) returns (bool);
+
+    function isFlightRegistered(bytes32 key) returns (bool);
+
+    function buy(
+        bytes32 key,
+        address passenger,
+        uint256 amount
+    );
 }
