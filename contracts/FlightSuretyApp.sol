@@ -178,7 +178,7 @@ contract FlightSuretyApp {
     }
 
     function buy(bytes32 flightKey) public payable requireIsOperational {
-        address(flightSuretyData).transfer(msg.value);
+        address(flightSuretyData).transfer(msg.value); //tx happens here.
         flightSuretyData.buy(flightKey, msg.sender, msg.value);
     }
 
@@ -410,9 +410,13 @@ contract FlightSuretyData {
 
     function isFlightRegistered(bytes32 key) returns (bool);
 
+    function creditInsurees(bytes32 key) internal;
+
     function buy(
         bytes32 key,
         address passenger,
         uint256 amount
     );
+
+    function pay(address passenger);
 }

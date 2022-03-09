@@ -42,12 +42,14 @@ contract FlightSuretyData {
     struct Insurance {
         address passenger;
         uint256 amount;
-        uint256 credit;
-        uint256 payout;
+        bool credited;
     }
 
     // Flight Insurance. Collection of passengers with insurance by Flight
-    mapping(bytes32 => Insurance) public flightInsurance;
+    mapping(bytes32 => Insurance[]) public flightInsurance;
+
+    //Passenger funds tracker
+    mapping(address => uint256) public passengerFunds;
 
     uint256 public constant INSURANCE_PRICE = 1 ether; // min purchase for flight insurance
 
@@ -56,6 +58,8 @@ contract FlightSuretyData {
     /********************************************************************************************/
     event FlightRegistered(bytes32 key);
     event InsurancePurchase(bytes32 key, address passenger);
+    event CreditIssued(address passenger, bytes32 key);
+    event PassengerWithdrawl(address passenger, uint256 payment);
 
     /**
      * @dev Constructor
@@ -256,25 +260,39 @@ contract FlightSuretyData {
         address passenger,
         uint256 amount
     ) external payable requireIsOperational {
-        flightInsurance[key] = Insurance({
-            passenger: passenger,
-            amount: amount,
-            payout: INSURANCE_PRICE,
-            credit: 0
-        });
+        flightInsurance[key].push(
+            Insurance({passenger: passenger, amount: amount, credited: false})
+        );
+
         emit InsurancePurchase(key, passenger);
     }
 
     /**
      *  @dev Credits payouts to insurees
      */
-    function creditInsurees() external requireIsOperational {}
+    function creditInsurees(bytes32 flightKey) external requireIsOperational {
+        for (uint256 i = 0; i < flightInsurance[flightKey].length; i++) {
+            uint256 amount = flightInsurance[flightKey][i].amount;
+            flightInsurance[flightKey][i].credited = true;
+            amount = amount.div(2) + amount; //1.5x amount is credited
+            passengerFunds[flightInsurance[flightKey][i].passenger] = amount; //becomes withdrawable.
+            emit CreditIssued(
+                flightInsurance[flightKey][i].passenger,
+                flightKey
+            );
+        }
+    }
 
     /**
      *  @dev Transfers eligible payout funds to insuree
      *
      */
-    function pay() external requireIsOperational {}
+    function pay(address passenger) external requireIsOperational {
+        uint256 payment = passengerFunds[passenger];
+        passengerFunds[passenger] = 0;
+        passenger.transfer(payment);
+        emit PassengerWithdrawl(passenger, payment);
+    }
 
     /**
      * @dev Initial funding for the insurance. Unless there are too many delayed flights
