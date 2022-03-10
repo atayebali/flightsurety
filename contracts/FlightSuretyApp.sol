@@ -178,8 +178,18 @@ contract FlightSuretyApp {
     }
 
     function buy(bytes32 flightKey) public payable requireIsOperational {
+        require(msg.sender == tx.origin, "Contracts not allowed");
         address(flightSuretyData).transfer(msg.value); //tx happens here.
         flightSuretyData.buy(flightKey, msg.sender, msg.value);
+    }
+
+    function creditInsurees(bytes32 flightKey)
+        public
+        payable
+        requireIsOperational
+    {
+        require(msg.sender == tx.origin, "Contracts not allowed");
+        flightSuretyData.creditInsurees(flightKey);
     }
 
     /**
@@ -410,7 +420,7 @@ contract FlightSuretyData {
 
     function isFlightRegistered(bytes32 key) returns (bool);
 
-    function creditInsurees(bytes32 key) internal;
+    function creditInsurees(bytes32 key);
 
     function buy(
         bytes32 key,
