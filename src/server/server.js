@@ -13,6 +13,15 @@ let flightSuretyApp = new web3.eth.Contract(FlightSuretyApp.abi, config.appAddre
 let oracles = [] //List of Registered Oracles.
 let flightSuretyData = new web3.eth.Contract(FlightSuretyData.abi, config.dataAddress);
 
+const STATUS_CODE_UNKNOWN = 0;
+const STATUS_CODE_LATE_AIRLINE = 20;
+const STATUS_CODE_LATE_WEATHER = 30;
+const STATUS_CODE_LATE_TECHNICAL = 40;
+const STATUS_CODE_LATE_OTHER = 50;
+
+let defaultStatus = STATUS_CODE_UNKNOWN;
+
+
 flightSuretyApp.events.OracleRequest({
   fromBlock: 0
 }, function (error, event) {
