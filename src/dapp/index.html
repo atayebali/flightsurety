@@ -12,69 +12,57 @@
 </head>
 
 <body>
-
-
-
     <main class="container">
 
         <section class="top-20 airline">
             <h1>Airlines</h1>
             <div class="row">
                 <div class="col-sm-12">
-                    <div class="card bg-primary">
+                    <div class="">
                         <div class="card-body">
                             <h2 class="card-title">Operational Status</h2>
-
                             <hr />
-                            <button class="btn btn-success" id="get-operational">Get Operational Status <i
-                                    data-feather="activity"></i></button>
-                            <button class="btn btn-warning" id="toggle-operational">Toggle Operational Status <i
-                                    data-feather="toggle-left"></i></button>
+                            <button class="btn btn-success" id="get-operational">Get Operational Status </button>
+                            <button class="btn btn-warning" id="toggle-operational">Toggle Operational Status
+                            </button>
                         </div>
                     </div>
                 </div>
 
                 <div class="col-sm-6">
-                    <div class="card bg-primary">
-                        <div class="card-body">
-                            <h2 class="card-title">Register Airline</h2>
-                            <hr />
-                            <label for="airline-address">Airline Address:</label>
-                            <input type="text" id="airline-address" placeholder="Airline Address">
-                            <br />
-                            <button class="btn btn-success" id="register-airline">Register Airline <i
-                                    data-feather="plus-square"></i></button>
-                        </div>
-                    </div>
-                </div>
+                    <h2 class="card-title">Register Airline</h2>
+                    <hr />
+                    <label for="airline-address">Airline Address:</label>
+                    <input type="text" id="airline-address" placeholder="Airline Address">
+                    <br />
+                    <button class="btn btn-success" id="register-airline">Register Airline <i
+                            data-feather="plus-square"></i></button>
 
-                <div class="col-sm-6">
-                    <div class="card bg-primary">
-                        <div class="card-body">
-                            <h2 class="card-title">Fund Registered Airline</h2>
-                            <hr />
-                            <label for="funding-amount" class="form">Funding Amount (eth):</label>
-                            <input type="number" id="funding-amount" min="10" placeholder="0-10">
-                            <br />
-                            <button class="btn btn-success" id="fund-airline">Fund Airline <i
-                                    data-feather="dollar-sign"></i></button>
-                        </div>
-                    </div>
                 </div>
+            </div>
 
-                <div class="col-sm-12">
-                    <div class="card bg-primary">
-                        <div class="card-body">
-                            <h2 class="card-title">Register Flight</h2>
-                            <hr />
-                            <label for="flight-number">Flight Number:</label>
-                            <input type="text" id="flight-number" placeholder="Flight Number">
-                            <br />
-                            <button class="btn btn-success" id="register-flight">Register Flight <i
-                                    data-feather="send"></i></button>
-                        </div>
-                    </div>
-                </div>
+            <div class="col-sm-6">
+
+                <h2 class="card-title">Fund Registered Airline</h2>
+                <hr />
+                <label for="funding-amount" class="form">Funding Amount (eth):</label>
+                <input type="number" id="funding-amount" min="10" placeholder="0-10">
+                <br />
+                <button class="btn btn-success" id="fund-airline">Fund Airline <i
+                        data-feather="dollar-sign"></i></button>
+            </div>
+
+            <div class="col-sm-12">
+
+                <h2 class="card-title">Register Flight</h2>
+                <hr />
+                <label for="flight-number">Flight Number:</label>
+                <input type="text" id="flight-number" placeholder="Flight Number">
+                <br />
+                <button class="btn btn-success" id="register-flight">Register Flight <i
+                        data-feather="send"></i></button>
+
+            </div>
             </div>
         </section>
 
@@ -82,30 +70,25 @@
             <h1>Passenger</h1>
             <div class="row">
                 <div class="col-sm-12">
-                    <div class="card bg-primary">
-                        <div class="card-body">
-                            <h2 class="card-title">Withdrawable Funds</h2>
-                            <hr />
-                            <p id="withdrawable-funds">Withdrawable Funds</p>
-                            <button class="btn btn-warning" id="refresh-funds">Refresh Withdrawable Funds <i
-                                    data-feather="refresh-cw"></i></button>
-                            <button class="btn btn-danger" id="withdraw-funds">Withdraw Funds <i
-                                    data-feather="dollar-sign"></i></button>
-                        </div>
-                    </div>
+
+                    <h2 class="card-title">Withdrawable Funds</h2>
+                    <hr />
+                    <p id="withdrawable-funds">Withdrawable Funds</p>
+                    <button class="btn btn-warning" id="refresh-funds">Refresh Withdrawable Funds <i
+                            data-feather="refresh-cw"></i></button>
+                    <button class="btn btn-danger" id="withdraw-funds">Withdraw Funds <i
+                            data-feather="dollar-sign"></i></button>
+
                 </div>
             </div>
             <div class="row">
                 <div class="col-sm-12">
-                    <div class="card bg-primary">
-                        <div class="card-body">
-                            <h2 class="card-title">Flights</h2>
-                            <button class="btn btn-warning" id="refresh-flights">Refresh Flights <i
-                                    data-feather="refresh-cw"></i></button>
-                            <div class="row" id="flights-container">
-                            </div>
-                        </div>
+
+                    <h2 class="card-title">Flights</h2>
+                    <button class="btn btn-warning" id="refresh-flights">Refresh Flights <i></i></button>
+                    <div class="row" id="flights-container">
                     </div>
+
                 </div>
             </div>
 

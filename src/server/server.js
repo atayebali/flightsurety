@@ -33,7 +33,7 @@ flightSuretyApp.events.OracleRequest({
   submitOracleResponse(airline, flight, updatedTimestamp)
 });
 
-// Log Updates from the contracts
+// Log Updates from the contractsi
 flightSuretyData.events.allEvents({
   fromBlock: "latest"
 }, function (error, event) {

@@ -9,6 +9,13 @@ contract FlightSuretyData {
     /*                                       DATA VARIABLES                                     */
     /********************************************************************************************/
 
+    uint8 private constant STATUS_CODE_ON_TIME = 10;
+    uint8 private constant STATUS_CODE_UNKNOWN = 0;
+    uint8 private constant STATUS_CODE_LATE_AIRLINE = 20;
+    uint8 private constant STATUS_CODE_LATE_WEATHER = 30;
+    uint8 private constant STATUS_CODE_LATE_TECHNICAL = 40;
+    uint8 private constant STATUS_CODE_LATE_OTHER = 50;
+
     address public firstAirline; //holds the first airline
     address private contractOwner; // Account used to deploy contract
     bool public operational = true; // Blocks all state changes throughout the contract if false
@@ -60,6 +67,7 @@ contract FlightSuretyData {
     event InsurancePurchase(bytes32 key, address passenger);
     event CreditIssued(address passenger, bytes32 key);
     event PassengerWithdrawl(address passenger, uint256 payment);
+    event ProcessedFlightStatus(bytes32 flightKey, uint8 statusCode);
 
     /**
      * @dev Constructor
@@ -119,8 +127,18 @@ contract FlightSuretyData {
         _;
     }
 
+    modifier requireAirlineNOTFunded(address airline) {
+        require(!hasFunds(airline), "Airline is funded already");
+        _;
+    }
+
     modifier requireFlightUnRegistered(bytes32 key) {
         require(!flights[key].isRegistered, "Flight is already registered");
+        _;
+    }
+
+    modifier requireFlightRegistered(bytes32 key) {
+        require(flights[key].isRegistered, "Flight is NOT already registered");
         _;
     }
 
@@ -192,6 +210,10 @@ contract FlightSuretyData {
         consensus_counter = consensus_counter.add(1);
     }
 
+    function isFlightLanded(bytes32 key) public view returns (bool) {
+        return (flights[key].statusCode > STATUS_CODE_UNKNOWN);
+    }
+
     function multiPartyConsenus(address airline, address voter) returns (bool) {
         bool isDuplicate = false;
 
@@ -235,7 +257,7 @@ contract FlightSuretyData {
     {
         flights[key] = Flight({
             isRegistered: true,
-            statusCode: 0,
+            statusCode: STATUS_CODE_UNKNOWN,
             updatedTimestamp: updatedTimestamp,
             airline: airline
         });
@@ -259,7 +281,7 @@ contract FlightSuretyData {
         bytes32 key,
         address passenger,
         uint256 amount
-    ) external payable requireIsOperational {
+    ) external payable requireIsOperational requireFlightRegistered(key) {
         flightInsurance[key].push(
             Insurance({passenger: passenger, amount: amount, credited: false})
         );
@@ -270,7 +292,7 @@ contract FlightSuretyData {
     /**
      *  @dev Credits payouts to insurees
      */
-    function creditInsurees(bytes32 flightKey) external requireIsOperational {
+    function creditInsurees(bytes32 flightKey) internal requireIsOperational {
         for (uint256 i = 0; i < flightInsurance[flightKey].length; i++) {
             uint256 amount = flightInsurance[flightKey][i].amount;
             flightInsurance[flightKey][i].credited = true;
@@ -304,8 +326,9 @@ contract FlightSuretyData {
         payable
         requireIsOperational
         requireAirlineRegistered(msg.sender)
+        requireAirlineNOTFunded(msg.sender)
     {
-        require(msg.value > 0, "Trying to send a bad value");
+        require(msg.value >= MIN_FUNDS); //ensure funds match
         //save the current balance
         uint256 current_balance = airlines[msg.sender].funds;
         //safe add the new value
@@ -321,6 +344,27 @@ contract FlightSuretyData {
         uint256 timestamp
     ) internal requireIsOperational returns (bytes32) {
         return keccak256(abi.encodePacked(airline, flight, timestamp));
+    }
+
+    /**
+     * @dev Called after oracle has updated flight status
+     *
+     */
+    function processFlightStatus(
+        address airline,
+        string memory flight,
+        uint256 timestamp,
+        uint8 statusCode
+    ) internal requireIsOperational {
+        bytes32 flightKey = getFlightKey(airline, flight, timestamp);
+        require(!isFlightLanded(flightKey), "Flight has already landed.");
+        if (flights[flightKey].statusCode == STATUS_CODE_UNKNOWN) {
+            flights[flightKey].statusCode = statusCode;
+            if (statusCode == STATUS_CODE_LATE_AIRLINE) {
+                creditInsurees(flightKey);
+            }
+        }
+        emit ProcessedFlightStatus(flightKey, statusCode);
     }
 
     /**

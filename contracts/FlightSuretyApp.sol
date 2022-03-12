@@ -17,12 +17,6 @@ contract FlightSuretyApp {
     /********************************************************************************************/
 
     // Flight status codees
-    uint8 private constant STATUS_CODE_ON_TIME = 10;
-    uint8 private constant STATUS_CODE_UNKNOWN = 0;
-    uint8 private constant STATUS_CODE_LATE_AIRLINE = 20;
-    uint8 private constant STATUS_CODE_LATE_WEATHER = 30;
-    uint8 private constant STATUS_CODE_LATE_TECHNICAL = 40;
-    uint8 private constant STATUS_CODE_LATE_OTHER = 50;
 
     address private contractOwner; // Account used to deploy contract
 
@@ -76,6 +70,14 @@ contract FlightSuretyApp {
         _;
     }
 
+    modifier requireValidAmount() {
+        require(
+            msg.value > 0,
+            "Payment amount cannot must be a positive and non-zero"
+        );
+        _;
+    }
+
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
     /********************************************************************************************/
@@ -93,14 +95,6 @@ contract FlightSuretyApp {
     /*                                       UTILITY FUNCTIONS                                  */
     /********************************************************************************************/
 
-    function isOperational() public view returns (bool) {
-        return flightSuretyData.isOperational(); // Modify to call data contract's status
-    }
-
-    function firstAirline() public returns (address) {
-        return flightSuretyData.getFirstAirline();
-    }
-
     /**
      * @dev Sets contract operations on/off
      *
@@ -110,19 +104,28 @@ contract FlightSuretyApp {
         flightSuretyData.setOperatingStatus(mode);
     }
 
+    function isOperational() public view returns (bool) {
+        return flightSuretyData.isOperational(); // Modify to call data contract's status
+    }
+
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
+
+    function firstAirline() public returns (address) {
+        return flightSuretyData.getFirstAirline();
+    }
 
     /**
      * @dev Add an airline to the registration queue
      *
      */
+
     function registerAirline(address newAirlineAddress)
         external
         requireIsOperational
-        requireAirlineisUnRegistered(newAirlineAddress)
-        requireIsAirlineFunded
+        requireAirlineisUnRegistered(newAirlineAddress) //new airle is not registered already
+        requireIsAirlineFunded //Has funds
     {
         if (
             flightSuretyData.getConsensusCounter() <=
@@ -157,6 +160,24 @@ contract FlightSuretyApp {
     }
 
     /**
+     * @dev Called after oracle has updated flight status
+     *
+     */
+    function processFlightStatus(
+        address airline,
+        string memory flight,
+        uint256 timestamp,
+        uint8 statusCode
+    ) internal requireIsOperational {
+        flightSuretyData.processFlightStatus(
+            airline,
+            flight,
+            timestamp,
+            statusCode
+        );
+    }
+
+    /**
      * @dev Register a future flight for insuring.
      *
      */
@@ -177,31 +198,16 @@ contract FlightSuretyApp {
         return key;
     }
 
-    function buy(bytes32 flightKey) public payable requireIsOperational {
+    function buy(bytes32 flightKey)
+        public
+        payable
+        requireIsOperational
+        requireValidAmount
+    {
         require(msg.sender == tx.origin, "Contracts not allowed");
         address(flightSuretyData).transfer(msg.value); //tx happens here.
         flightSuretyData.buy(flightKey, msg.sender, msg.value);
     }
-
-    function creditInsurees(bytes32 flightKey)
-        public
-        payable
-        requireIsOperational
-    {
-        require(msg.sender == tx.origin, "Contracts not allowed");
-        flightSuretyData.creditInsurees(flightKey);
-    }
-
-    /**
-     * @dev Called after oracle has updated flight status
-     *
-     */
-    function processFlightStatus(
-        address airline,
-        string memory flight,
-        uint256 timestamp,
-        uint8 statusCode
-    ) internal requireIsOperational {}
 
     // Generate a request for oracles to fetch flight information
     function fetchFlightStatus(
@@ -420,8 +426,6 @@ contract FlightSuretyData {
 
     function isFlightRegistered(bytes32 key) returns (bool);
 
-    function creditInsurees(bytes32 key);
-
     function buy(
         bytes32 key,
         address passenger,
@@ -429,4 +433,11 @@ contract FlightSuretyData {
     );
 
     function pay(address passenger);
+
+    function processFlightStatus(
+        address airline,
+        string flight,
+        uint256 timestamp,
+        uint8 statusCode
+    ) external;
 }
