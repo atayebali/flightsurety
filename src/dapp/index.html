@@ -13,6 +13,7 @@
 
 <body>
     <main class="container">
+        <div id="display-wrapper"></div>
 
         <section class="top-20 airline">
             <h1>Airlines</h1>
@@ -32,6 +33,18 @@
                 <div class="col-sm-6">
                     <h2 class="card-title">Register Airline</h2>
                     <hr />
+
+                    <div class="dropdown">
+                        <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton"
+                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Select an airline
+                        </button>
+                        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton" id="airlineDropdownOptions">
+                            <button class="dropdown-item" value="#" type="button" id="UdacityAir">CrytoAir</button>
+                        </div>
+                    </div>
+                    <br>
+
                     <label for="airline-address">Airline Address:</label>
                     <input type="text" id="airline-address" placeholder="Airline Address">
                     <br />
@@ -42,7 +55,6 @@
             </div>
 
             <div class="col-sm-6">
-
                 <h2 class="card-title">Fund Registered Airline</h2>
                 <hr />
                 <label for="funding-amount" class="form">Funding Amount (eth):</label>
@@ -71,13 +83,11 @@
             <div class="row">
                 <div class="col-sm-12">
 
-                    <h2 class="card-title">Withdrawable Funds</h2>
+                    <h2 class="card-title">Payout Funds</h2>
                     <hr />
-                    <p id="withdrawable-funds">Withdrawable Funds</p>
-                    <button class="btn btn-warning" id="refresh-funds">Refresh Withdrawable Funds <i
-                            data-feather="refresh-cw"></i></button>
-                    <button class="btn btn-danger" id="withdraw-funds">Withdraw Funds <i
-                            data-feather="dollar-sign"></i></button>
+                    <p id="withdrawable-funds">Pay out Funds</p>
+
+                    <button class="btn btn-danger" id="pay">Pay Out Funds <i data-feather="dollar-sign"></i></button>
 
                 </div>
             </div>

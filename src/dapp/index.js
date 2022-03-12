@@ -1,4 +1,3 @@
-
 import DOM from './dom';
 import Contract from './contract';
 import './flightsurety.css';
@@ -13,19 +12,38 @@ import './flightsurety.css';
         // Read transaction
         contract.isOperational((error, result) => {
             console.log(error, result);
-            display('Operational Status', 'Check if contract is operational', [{ label: 'Operational Status', error: error, value: result }]);
+            display('Operational Status', '', [{ label: 'Operational Status', error: error, value: result }]);
+        });
+
+        DOM.elid('register-airline').addEventListener('click', () => {
+            let airline = DOM.elid('airline-address').value;
+            if (airline) {
+                contract.registerAirline(airline);
+            }
+        });
+
+        DOM.elid('fund-airline').addEventListener('click', () => {
+            let amount = DOM.elid('funding-amount').value;
+            contract.fund(amount);
+        });
+
+        DOM.elid('register-flight').addEventListener('click', async () => {
+            let flightNumber = DOM.elid('flight-number').value;
+            let departureLocation = DOM.elid('departure-location').value;
+            let arrivalLocation = DOM.elid('arrival-location').value;
+            contract.registerFlight(flightNumber);
         });
 
 
-        // User-submitted transaction
-        DOM.elid('submit-oracle').addEventListener('click', () => {
-            let flight = DOM.elid('flight-number').value;
-            // Write transaction
-            contract.fetchFlightStatus(flight, (error, result) => {
-                display('Oracles', 'Trigger oracles', [{ label: 'Fetch Flight Status', error: error, value: result.flight + ' ' + result.timestamp }]);
+        DOM.elid('pay').addEventListener('click', () => {
+            contract.pay((error, result) => {
+                if (error) {
+                    console.log(error)
+                } else {
+                    console.log(result);
+                }
             });
-        })
-
+        });
     });
 })();
 
